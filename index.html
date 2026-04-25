@@ -18,11 +18,10 @@
 <body>
     <div id="app-root"></div>
     <div id="modal-container"></div>
-
     <script>
-    // === PASTIKAN LINK INI ADALAH LINK DEPLOY "VERSI BARU" SETELAH MENAMBAHKAN DOPOST ===
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxvmhwMh3Q6y6MRtOWVQCLVfnYMVzp51ryewSWJrt-LEZReQ7OQd-mUfEYbgtRtUIqwxw/exec";
-
+    // === UBAH URL DI BAWAH INI DENGAN URL WEB APP ANDA ===
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwYl8Hm8LmCnkFhBC6tQeJP22TwYUATyioVmvrMbPzaMUZs_S6zsPBuVmd3DNVs0fzYVQ/exec";
+    
     const google = {
         script: {
             run: new Proxy({}, {
@@ -35,7 +34,7 @@
             })
         }
     };
-
+    
     function createRunner(callback, type) {
         let successCb = type === 'withSuccessHandler' ? callback : null;
         let failureCb = type === 'withFailureHandler' ? callback : (err => console.error(err));
@@ -46,12 +45,11 @@
                 if (actionName === 'withFailureHandler') return function(cb) { failureCb = cb; return runner; };
                 
                 return function(...args) {
-                    // FIX CORS & FETCH METHOD
                     fetch(GAS_API_URL, {
                         method: 'POST',
-                        redirect: 'follow', // PENTING: Ikuti redirect 302 Google
+                        redirect: 'follow', 
                         headers: {
-                            'Content-Type': 'text/plain;charset=utf-8' // PENTING: Mencegah CORS Preflight block
+                            'Content-Type': 'text/plain;charset=utf-8' 
                         },
                         body: JSON.stringify({ action: actionName, args: args })
                     })
@@ -63,7 +61,7 @@
         });
         return runner;
     }
-
+    
     function getCSS() {
         return `
         :root{
@@ -214,7 +212,6 @@
         @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
         `;
     }
-
     function getAdminHTML() { 
         return `
             <div id='admin-login-screen' style='position:fixed;inset:0;background:#fef2f2;z-index:9999;display:flex;align-items:center;justify-content:center'>
@@ -290,7 +287,6 @@
             </div>
         `;
     }
-
     function getEmployeeJS() {
         return `
             var currEmp=null;var loc={lat:'',lng:'',alamat:''};var clockInt=null;var compName='Dua Putra Group';var compLogo=''; var myNotifs=[];
@@ -304,7 +300,6 @@
             function updateEmpLogos(){ var boxes=document.querySelectorAll('.brand-logo'); boxes.forEach(function(b){ if(compLogo) b.innerHTML='<img src="'+compLogo+'" style="width:100%;height:100%;object-fit:contain">'; else b.innerHTML='<i data-lucide="briefcase" style="width:60%;height:60%;color:var(--primary)"></i>'; }); lucide.createIcons(); }
             
             function logoutEmp(){ localStorage.removeItem('saved_nik'); currEmp=null; myNotifs=[]; stopClock(); showInput(); }
-
             function loadNotifs(){ google.script.run.withSuccessHandler(function(rIzin){ google.script.run.withSuccessHandler(function(rLembur){ var izinArr = (rIzin||[]).map(function(x){ x.type='Izin'; return x; }); var lemburArr = (rLembur||[]).map(function(x){ x.type='Lembur'; x.jenis='Lembur '+x.durasi+' Menit'; return x; }); myNotifs = izinArr.concat(lemburArr).sort(function(a,b){return new Date(b.tanggal) - new Date(a.tanggal);}); var badge = document.getElementById('notif-badge'); if(!badge) return; var lastCount = parseInt(localStorage.getItem('notif_count_'+currEmp.nik) || '0'); var completedNotifs = myNotifs.filter(function(n){ return n.status !== 'Pending'; }); if(completedNotifs.length > lastCount){ badge.style.display='block'; } else { badge.style.display='none'; } }).getMyLemburHistory(currEmp.nik); }).getMyIzinHistory(currEmp.nik); }
             
             function showNotifModal(){ 
@@ -316,7 +311,6 @@
             }
             
             function closeNotifModal(){ document.getElementById('emp-notif-modal').classList.remove('active'); }
-
             function showInput(){
                 stopClock();
                 document.getElementById('app-container').innerHTML = \`
@@ -374,9 +368,7 @@
                     else { shiftDropdown += '<option value="Tanpa Shift" style="color:#000">Tanpa Shift (00:00 - 23:59)</option>'; }
                     shiftDropdown += '</select></div>';
                 }
-
                 var logoHtml = compLogo ? '<img src="'+compLogo+'" style="width:100%;height:100%;object-fit:contain">' : '<i data-lucide="briefcase" style="width:20px;color:var(--primary)"></i>';
-
                 var h = \`
                     <div class="app-header">
                         <div class="app-logo">
@@ -424,7 +416,6 @@
                     <div style="padding:0 20px 100px"><button id="act-btn" class="\${btnClass}" disabled onclick="doAbsen('\${status}')" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;"><i data-lucide="image"></i> \${btnTxt}</button></div>
                     \`;
                 }
-
                 h += \`
                     <div class="bottom-nav">
                         <div class="nav-icon active" onclick="checkEmp()"><i data-lucide="home" style="width:20px"></i><span>Home</span></div>
@@ -436,10 +427,8 @@
                 
                 document.getElementById('app-container').innerHTML = h; lucide.createIcons(); startClock(); getLoc();
             }
-
             var absenUploadedImg = null;
             function previewAbsenFoto(input) { if(input.files && input.files[0]) { var reader = new FileReader(); reader.onload = function(e){ var img = document.getElementById('absen-preview'); img.src = e.target.result; img.style.display = 'block'; document.getElementById('absen-placeholder').style.display = 'none'; absenUploadedImg = new Image(); absenUploadedImg.onload = function(){ var btn=document.getElementById('act-btn'); if(btn) btn.disabled=false; }; absenUploadedImg.src = e.target.result; }; reader.readAsDataURL(input.files[0]); } }
-
             function showFormIzin(){
                 stopClock();
                 document.getElementById('app-container').innerHTML = \`
@@ -463,7 +452,6 @@
                 \`;
                 lucide.createIcons();
             }
-
             function submitIzinForm(){
                 var j=document.getElementById('iz-jenis').value; var t=document.getElementById('iz-tgl').value; var d=document.getElementById('iz-durasi').value; var a=document.getElementById('iz-alasan').value; var f=document.getElementById('iz-file').files[0];
                 if(!t || !a){alert('Harap lengkapi Tanggal & Alasan!');return;}
@@ -480,7 +468,6 @@
                     google.script.run.withSuccessHandler(function(r){alert('Izin berhasil diajukan'); checkEmp();}).submitIzinData(payload);
                 }
             }
-
             function showFormLembur(){
                 stopClock();
                 document.getElementById('app-container').innerHTML = \`
@@ -503,7 +490,6 @@
                 \`;
                 lucide.createIcons();
             }
-
             function submitLemburForm(){
                 var t=document.getElementById('lmb-tgl').value; var d=document.getElementById('lmb-durasi').value; var a=document.getElementById('lmb-tugas').value;
                 if(!t || !d || !a){alert('Harap lengkapi Tanggal, Durasi, dan Tugas!');return;}
@@ -549,7 +535,6 @@
                 \`;
                 lucide.createIcons();
             }
-
             var profImg=null; function previewProfFoto(input){ if(input.files && input.files[0]){ var reader=new FileReader(); reader.onload=function(e){ document.getElementById('prof-preview').src=e.target.result; document.getElementById('prof-preview').style.display='block'; document.getElementById('prof-placeholder').style.display='none'; profImg=new Image(); profImg.src=e.target.result; }; reader.readAsDataURL(input.files[0]); } }
             
             function saveProfile(){ 
@@ -565,7 +550,6 @@
             }
             
             function doSaveProf(nik,nama,div,foto,desc,libArr){ google.script.run.withSuccessHandler(function(r){ currEmp.nik=nik; currEmp.nama=nama; currEmp.divisi=div; if(foto) currEmp.foto=foto; if(libArr.length > 0) { google.script.run.withSuccessHandler(function(){ alert('Profil & Tanggal Libur berhasil disimpan!'); checkEmp(); }).submitJadwalLibur({nik:nik, nama:nama, dates:libArr}); } else { alert('Profil berhasil diupdate!'); checkEmp(); } }).updateEmployeeProfile({id:currEmp.id, nik:nik, nama:nama, divisi:div, foto:foto, desc:desc, hariLibur:''}); }
-
             function startClock(){updateTime();clockInt=setInterval(updateTime,1000);}
             function stopClock(){if(clockInt)clearInterval(clockInt);}
             function updateTime(){var d=new Date();var opts={timeZone:'Asia/Jakarta',hour:'numeric',minute:'2-digit',hour12:true};var parts=new Intl.DateTimeFormat('en-US',opts).formatToParts(d);var h,m,am;parts.forEach(function(p){if(p.type==='hour')h=p.value;if(p.type==='minute')m=p.value;if(p.type==='dayPeriod')am=p.value;});document.getElementById('clock').innerHTML=h+':'+m+' <span style="font-size:16px;font-weight:400">'+am+'</span>';var dOpts={timeZone:'Asia/Jakarta',weekday:'long',year:'numeric',month:'long',day:'numeric'};document.getElementById('date').innerText=d.toLocaleDateString('en-US',dOpts);}
@@ -594,7 +578,6 @@
             }
         `;
     }
-
     function getRegisterJS() {
         return `
             var uploadedImg=null; document.addEventListener('DOMContentLoaded', function(){lucide.createIcons(); loadFaceApi();});
@@ -613,7 +596,6 @@
             }
         `;
     }
-
     function getAdminJS() {
         return `
             var currentPage='dashboard';var employees=[];var attendance=[];var izinList=[];var lemburList=[];var stats={};var appShifts=[];var compName='Dua Putra Group';var compLogo='';var colors=['blue','green','orange','purple','cyan'];
@@ -667,7 +649,6 @@
             function renderChart(data){if(!data)return;var ctx=document.getElementById('attChart');new Chart(ctx,{type:'bar',data:{labels:data.labels,datasets:[{label:'Hadir',data:data.hadir,backgroundColor:'#10b981',borderRadius:4},{label:'Alfa (Tidak Hadir)',data:data.alfa,backgroundColor:'#ef4444',borderRadius:4}]},options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});}
         `;
     }
-
     function getAdminJS2() {
         return `
             var filterMonth='';
@@ -727,7 +708,6 @@
             }
         `;
     }
-
     function getAdminJS3() {
         return `
             function renderKaryawan(){var c=document.getElementById('main-content');c.innerHTML='<div class="page-header"><h1>Data Karyawan</h1><div class="header-actions"><button class="btn btn-primary" onclick="showAddModal()"><i data-lucide="plus" style="width:16px"></i> Tambah Karyawan</button><button class="btn btn-success" onclick="runSetup()"><i data-lucide="database" style="width:16px"></i> Setup Sheet</button></div></div><div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Karyawan</th><th>NIK</th><th>Divisi</th><th>Status Jadwal</th><th>Foto Wajah</th><th>Aksi</th></tr></thead><tbody id="emp-table"></tbody></table></div></div></div>';lucide.createIcons();renderEmpTable();}
@@ -743,7 +723,6 @@
             function saveLibur(nik, nama){ var arr=[]; for(var i=1; i<=4; i++){ var v=document.getElementById('ad-lib-'+i).value; if(v) arr.push(v); } document.querySelector('#modal .btn-primary').innerText='Menyimpan...'; google.script.run.withSuccessHandler(function(r){ closeModal(); showToast('Jadwal libur disimpan', 'success'); loadData(); }).submitJadwalLibur({nik:nik, nama:nama, dates:arr}); }
         `;
     }
-
     function getAdminJS4() {
         return `
             var newLogoBase64=null; function previewLogoUpload(input){if(input.files&&input.files[0]){var reader=new FileReader();reader.onload=function(e){document.getElementById('set-logo-preview').src=e.target.result;document.getElementById('set-logo-preview').style.display='block'; var img=new Image(); img.onload=function(){var cv=document.createElement('canvas');var max=300;var scale=Math.min(max/img.width, max/img.height);cv.width=img.width*scale;cv.height=img.height*scale;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);newLogoBase64=cv.toDataURL('image/png',0.8);}; img.src=e.target.result;};reader.readAsDataURL(input.files[0]);}}
@@ -772,14 +751,12 @@
             doc.save('IDCard_'+e.nama+'.pdf');}
         `;
     }
-
     function getAdminJS5() {
         return `
             function renderLembur(){var c=document.getElementById('main-content');c.innerHTML='<div class="page-header"><h1>Data Lembur Karyawan</h1></div><div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Durasi</th><th>Pekerjaan/Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="lembur-table"></tbody></table></div></div></div>';var tb=document.getElementById('lembur-table');if(lemburList.length===0){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted-admin)">Belum ada pengajuan lembur</td></tr>';}else{var h='';lemburList.forEach(function(z){var badge=z.status==='Pending'?'<span class="badge badge-warning">Pending</span>':(z.status==='Approved'?'<span class="badge badge-success">Disetujui</span>':'<span class="badge badge-danger">Ditolak</span>');var aksi=z.status==='Pending'?'<button class="btn btn-success" style="padding:4px 8px;font-size:11px" onclick="updateLembur(\\''+z.id+'\\',\\'Approved\\')">Setuju</button> <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;margin-left:5px" onclick="updateLembur(\\''+z.id+'\\',\\'Rejected\\')">Tolak</button>':'-';h+='<tr><td>'+z.tanggal+'</td><td><b>'+z.nama+'</b><br><small style="color:var(--text-muted-admin)">'+z.nik+'</small></td><td>'+z.durasi+' Menit</td><td>'+z.tugas+'</td><td>'+badge+'</td><td><div style="display:flex">'+aksi+'</div></td></tr>';});tb.innerHTML=h;}lucide.createIcons();}
             function updateLembur(id,status){if(confirm('Ubah status menjadi '+status+'?')){google.script.run.withSuccessHandler(function(r){if(r.success){showToast('Status Lembur diperbarui','success');loadData();}}).updateLemburStatus(id,status);}}
         `;
     }
-
     function renderApp() {
         const urlParams = new URLSearchParams(window.location.search);
         const page = urlParams.get('page') || 'employee';
@@ -787,10 +764,8 @@
         const style = document.createElement('style');
         style.innerHTML = getCSS();
         document.head.appendChild(style);
-
         let bodyHtml = "";
         let jsStr = "";
-
         if (page === "admin") {
             bodyHtml = getAdminHTML();
             jsStr = getAdminJS() + getAdminJS2() + getAdminJS3() + getAdminJS4() + getAdminJS5();
@@ -801,13 +776,10 @@
             bodyHtml = getEmployeeHTML();
             jsStr = getEmployeeJS();
         }
-
         document.getElementById('app-root').innerHTML = bodyHtml;
-
         const script = document.createElement('script');
         script.innerHTML = jsStr;
         document.body.appendChild(script);
-
         setTimeout(() => {
             window.document.dispatchEvent(new Event('DOMContentLoaded', {
                 bubbles: true,
@@ -815,7 +787,6 @@
             }));
         }, 100);
     }
-
     renderApp();
     </script>
 </body>
