@@ -20,7 +20,7 @@
     <div id="modal-container"></div>
 
     <script>
-    // === GANTI DENGAN LINK DEPLOY TERBARUMU ===
+    // === PASTIKAN LINK INI ADALAH LINK DEPLOY "VERSI BARU" SETELAH MENAMBAHKAN DOPOST ===
     const GAS_API_URL = "https://script.google.com/macros/s/AKfycby-iPiLXyDVpKmf5DP9CNDMFE2a7xYLS-cf60vmiLJJlNtCB-odnK_w1pqfrj5fNZy4xw/exec";
 
     const google = {
@@ -46,8 +46,13 @@
                 if (actionName === 'withFailureHandler') return function(cb) { failureCb = cb; return runner; };
                 
                 return function(...args) {
+                    // FIX CORS & FETCH METHOD
                     fetch(GAS_API_URL, {
                         method: 'POST',
+                        redirect: 'follow', // PENTING: Ikuti redirect 302 Google
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8' // PENTING: Mencegah CORS Preflight block
+                        },
                         body: JSON.stringify({ action: actionName, args: args })
                     })
                     .then(res => res.json())
@@ -286,7 +291,6 @@
         `;
     }
 
-    // === JS KARYAWAN (TEKNIK TEMPLATE LITERAL UNTUK MENCEGAH SYNTAX ERROR) ===
     function getEmployeeJS() {
         return `
             var currEmp=null;var loc={lat:'',lng:'',alamat:''};var clockInt=null;var compName='Dua Putra Group';var compLogo=''; var myNotifs=[];
@@ -341,7 +345,7 @@
                 google.script.run.withSuccessHandler(function(r){
                     try {
                         if(btn){btn.innerText=t; btn.disabled=false;}
-                        // PERBAIKAN JSON PARSE ERROR
+                        // FIX JSON
                         if (typeof r === 'string') { r = JSON.parse(r); } 
                         
                         if(r.success){
@@ -591,7 +595,6 @@
         `;
     }
 
-    // === JS REGISTER (TEMPLATE LITERALS) ===
     function getRegisterJS() {
         return `
             var uploadedImg=null; document.addEventListener('DOMContentLoaded', function(){lucide.createIcons(); loadFaceApi();});
@@ -611,7 +614,6 @@
         `;
     }
 
-    // === JS ADMIN (TEMPLATE LITERALS) ===
     function getAdminJS() {
         return `
             var currentPage='dashboard';var employees=[];var attendance=[];var izinList=[];var lemburList=[];var stats={};var appShifts=[];var compName='Dua Putra Group';var compLogo='';var colors=['blue','green','orange','purple','cyan'];
