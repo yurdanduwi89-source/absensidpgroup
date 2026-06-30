@@ -772,7 +772,32 @@
         return `
             function renderLembur(){
                 var c=document.getElementById('main-content');
-                c.innerHTML='<div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><h1>Data Lembur Karyawan</h1><div class="header-actions"><div class="search-box" style="border:1px solid var(--primary); background:#fff;"><i data-lucide="search" style="width:16px;color:var(--primary)"></i><input type="text" id="cari-lembur" placeholder="Cari nama karyawan..." onkeyup="filterLembur()"></div></div></div><div class="card" id="rekap-lembur" style="display:none; background:#eff6ff; border-color:#93c5fd;"><div class="card-body" id="rekap-text" style="color:#1e3a8a; font-size:13px; line-height:1.6;"></div></div><div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Durasi</th><th>Pekerjaan/Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="lembur-table"></tbody></table></div></div></div>';
+                // Menambahkan UI Filter Tanggal dan Kotak Pencarian
+                c.innerHTML='<div class="page-header" style="display:flex; flex-direction:column; gap:15px;">' +
+                    '<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">' +
+                        '<h1>Data Lembur Karyawan</h1>' +
+                    '</div>' +
+                    '<div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; background:#fff; padding:15px; border-radius:12px; border:1px solid var(--border-admin);">' +
+                        '<div style="display:flex; flex-direction:column; gap:5px;">' +
+                            '<label style="font-size:11px; color:var(--text-muted-admin); font-weight:600;">Mulai Tanggal</label>' +
+                            '<input type="date" id="tgl-mulai" class="form-input" style="width:auto;" onchange="filterLembur()">' +
+                        '</div>' +
+                        '<div style="display:flex; flex-direction:column; gap:5px;">' +
+                            '<label style="font-size:11px; color:var(--text-muted-admin); font-weight:600;">Sampai Tanggal</label>' +
+                            '<input type="date" id="tgl-sampai" class="form-input" style="width:auto;" onchange="filterLembur()">' +
+                        '</div>' +
+                        '<div style="display:flex; flex-direction:column; gap:5px; flex:1; min-width:200px;">' +
+                            '<label style="font-size:11px; color:var(--text-muted-admin); font-weight:600;">Cari Nama Karyawan</label>' +
+                            '<div class="search-box" style="border:1px solid var(--border-admin); margin:0;"><i data-lucide="search" style="width:16px;color:var(--text-muted-admin)"></i><input type="text" id="cari-lembur" placeholder="Ketik nama (Misal: Davin)..." onkeyup="filterLembur()"></div>' +
+                        '</div>' +
+                        '<div style="display:flex; align-items:flex-end; padding-bottom:2px;">' +
+                            '<button class="btn btn-outline" onclick="resetFilterLembur()"><i data-lucide="refresh-cw" style="width:14px;"></i> Reset</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="card" id="rekap-lembur" style="display:none; background:#eff6ff; border-color:#93c5fd; margin-top:15px;"><div class="card-body" id="rekap-text" style="color:#1e3a8a; font-size:13px; line-height:1.6;"></div></div>' +
+                '<div class="card" style="margin-top:15px;"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Durasi</th><th>Pekerjaan/Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="lembur-table"></tbody></table></div></div></div>';
+                
                 renderLemburTableData(lemburList);
             }
             
@@ -794,26 +819,33 @@
 
             function filterLembur() {
                 var keyword = document.getElementById('cari-lembur').value.toLowerCase();
+                var tglMulai = document.getElementById('tgl-mulai').value;
+                var tglSampai = document.getElementById('tgl-sampai').value;
+                
                 var rekapDiv = document.getElementById('rekap-lembur');
                 var rekapText = document.getElementById('rekap-text');
                 
-                // Jika input kosong, kembalikan seperti semula
-                if(!keyword) {
+                // Jika semua filter kosong, sembunyikan kotak rekap
+                if(!keyword && !tglMulai && !tglSampai) {
                     rekapDiv.style.display = 'none';
                     renderLemburTableData(lemburList);
                     return;
                 }
 
-                // Saring data berdasarkan nama karyawan
+                // Saring data berdasarkan nama karyawan DAN rentang tanggal
                 var filtered = lemburList.filter(function(z) {
-                    return z.nama.toLowerCase().includes(keyword);
+                    var matchName = z.nama.toLowerCase().includes(keyword);
+                    var matchMulai = tglMulai ? (z.tanggal >= tglMulai) : true;
+                    var matchSampai = tglSampai ? (z.tanggal <= tglSampai) : true;
+                    
+                    return matchName && matchMulai && matchSampai;
                 });
                 
                 var totalDurasi = 0;
                 var totalDisetujui = 0;
                 var tanggalList = [];
 
-                // Hitung rekap untuk status yang sudah disetujui (Approved)
+                // Hitung rekap hanya untuk status yang sudah disetujui (Approved)
                 filtered.forEach(function(z){
                     if(z.status === 'Approved') {
                         totalDurasi += (parseInt(z.durasi) || 0);
@@ -824,16 +856,30 @@
 
                 rekapDiv.style.display = 'block';
                 if(filtered.length > 0) {
-                    rekapText.innerHTML = '<strong style="font-size:14px;"><i data-lucide="bar-chart-2" style="width:16px;vertical-align:middle;margin-right:5px"></i> Rekap Lembur (Disetujui) : ' + keyword.toUpperCase() + '</strong><br><br>' + 
+                    var periodeTeks = "";
+                    if(tglMulai && tglSampai) periodeTeks = " (" + tglMulai + " s/d " + tglSampai + ")";
+                    else if (tglMulai) periodeTeks = " (Mulai " + tglMulai + ")";
+                    else if (tglSampai) periodeTeks = " (Sampai " + tglSampai + ")";
+                    
+                    rekapText.innerHTML = '<strong style="font-size:14px;"><i data-lucide="bar-chart-2" style="width:16px;vertical-align:middle;margin-right:5px"></i> Rekap Lembur Disetujui' + periodeTeks + '</strong><br><br>' + 
+                    '&bull; Nama / Pencarian : <b>' + (keyword ? keyword.toUpperCase() : 'Semua Karyawan') + '</b><br>' +
                     '&bull; Jumlah Lembur : <b>' + totalDisetujui + ' kali</b><br>' +
                     '&bull; Total Durasi : <b>' + totalDurasi + ' Menit</b> (' + (totalDurasi/60).toFixed(1) + ' Jam)<br>' +
-                    '&bull; Daftar Tanggal : ' + (tanggalList.length > 0 ? tanggalList.join(', ') : 'Belum ada data disetujui');
+                    '&bull; Daftar Tanggal : ' + (tanggalList.length > 0 ? tanggalList.join(', ') : 'Belum ada data lembur yang disetujui pada periode/filter ini');
                 } else {
-                    rekapText.innerHTML = '<strong>Tidak ada data lembur untuk pencarian tersebut.</strong>';
+                    rekapText.innerHTML = '<strong>Tidak ada data lembur yang sesuai dengan filter pencarian dan tanggal tersebut.</strong>';
                 }
                 
                 // Tampilkan data yang sudah disaring ke tabel
                 renderLemburTableData(filtered);
+            }
+            
+            // Fungsi baru untuk mereset semua filter ke kondisi awal
+            function resetFilterLembur() {
+                document.getElementById('cari-lembur').value = '';
+                document.getElementById('tgl-mulai').value = '';
+                document.getElementById('tgl-sampai').value = '';
+                filterLembur(); // Panggil ulang untuk merefresh tabel
             }
 
             function updateLembur(id,status){if(confirm('Ubah status menjadi '+status+'?')){google.script.run.withSuccessHandler(function(r){if(r.success){showToast('Status Lembur diperbarui','success');loadData();}}).updateLemburStatus(id,status);}}
