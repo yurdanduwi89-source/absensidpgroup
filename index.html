@@ -770,7 +770,72 @@
     
     function getAdminJS5() {
         return `
-            function renderLembur(){var c=document.getElementById('main-content');c.innerHTML='<div class="page-header"><h1>Data Lembur Karyawan</h1></div><div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Durasi</th><th>Pekerjaan/Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="lembur-table"></tbody></table></div></div></div>';var tb=document.getElementById('lembur-table');if(lemburList.length===0){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted-admin)">Belum ada pengajuan lembur</td></tr>';}else{var h='';lemburList.forEach(function(z){var badge=z.status==='Pending'?'<span class="badge badge-warning">Pending</span>':(z.status==='Approved'?'<span class="badge badge-success">Disetujui</span>':'<span class="badge badge-danger">Ditolak</span>');var aksi=z.status==='Pending'?'<button class="btn btn-success" style="padding:4px 8px;font-size:11px" onclick="updateLembur(\\''+z.id+'\\',\\'Approved\\')">Setuju</button> <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;margin-left:5px" onclick="updateLembur(\\''+z.id+'\\',\\'Rejected\\')">Tolak</button>':'-';h+='<tr><td>'+z.tanggal+'</td><td><b>'+z.nama+'</b><br><small style="color:var(--text-muted-admin)">'+z.nik+'</small></td><td>'+z.durasi+' Menit</td><td>'+z.tugas+'</td><td>'+badge+'</td><td><div style="display:flex">'+aksi+'</div></td></tr>';});tb.innerHTML=h;}lucide.createIcons();}
+            function renderLembur(){
+                var c=document.getElementById('main-content');
+                c.innerHTML='<div class="page-header" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;"><h1>Data Lembur Karyawan</h1><div class="header-actions"><div class="search-box" style="border:1px solid var(--primary); background:#fff;"><i data-lucide="search" style="width:16px;color:var(--primary)"></i><input type="text" id="cari-lembur" placeholder="Cari nama karyawan..." onkeyup="filterLembur()"></div></div></div><div class="card" id="rekap-lembur" style="display:none; background:#eff6ff; border-color:#93c5fd;"><div class="card-body" id="rekap-text" style="color:#1e3a8a; font-size:13px; line-height:1.6;"></div></div><div class="card"><div class="card-body"><div class="table-responsive"><table class="table"><thead><tr><th>Tanggal</th><th>Karyawan</th><th>Durasi</th><th>Pekerjaan/Tugas</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="lembur-table"></tbody></table></div></div></div>';
+                renderLemburTableData(lemburList);
+            }
+            
+            function renderLemburTableData(dataLembur) {
+                var tb=document.getElementById('lembur-table');
+                if(dataLembur.length===0){
+                    tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted-admin)">Data tidak ditemukan</td></tr>';
+                }else{
+                    var h='';
+                    dataLembur.forEach(function(z){
+                        var badge=z.status==='Pending'?'<span class="badge badge-warning">Pending</span>':(z.status==='Approved'?'<span class="badge badge-success">Disetujui</span>':'<span class="badge badge-danger">Ditolak</span>');
+                        var aksi=z.status==='Pending'?'<button class="btn btn-success" style="padding:4px 8px;font-size:11px" onclick="updateLembur(\\''+z.id+'\\',\\'Approved\\')">Setuju</button> <button class="btn btn-danger" style="padding:4px 8px;font-size:11px;margin-left:5px" onclick="updateLembur(\\''+z.id+'\\',\\'Rejected\\')">Tolak</button>':'-';
+                        h+='<tr><td>'+z.tanggal+'</td><td><b>'+z.nama+'</b><br><small style="color:var(--text-muted-admin)">'+z.nik+'</small></td><td>'+z.durasi+' Menit</td><td>'+z.tugas+'</td><td>'+badge+'</td><td><div style="display:flex">'+aksi+'</div></td></tr>';
+                    });
+                    tb.innerHTML=h;
+                }
+                lucide.createIcons();
+            }
+
+            function filterLembur() {
+                var keyword = document.getElementById('cari-lembur').value.toLowerCase();
+                var rekapDiv = document.getElementById('rekap-lembur');
+                var rekapText = document.getElementById('rekap-text');
+                
+                // Jika input kosong, kembalikan seperti semula
+                if(!keyword) {
+                    rekapDiv.style.display = 'none';
+                    renderLemburTableData(lemburList);
+                    return;
+                }
+
+                // Saring data berdasarkan nama karyawan
+                var filtered = lemburList.filter(function(z) {
+                    return z.nama.toLowerCase().includes(keyword);
+                });
+                
+                var totalDurasi = 0;
+                var totalDisetujui = 0;
+                var tanggalList = [];
+
+                // Hitung rekap untuk status yang sudah disetujui (Approved)
+                filtered.forEach(function(z){
+                    if(z.status === 'Approved') {
+                        totalDurasi += (parseInt(z.durasi) || 0);
+                        totalDisetujui++;
+                        tanggalList.push(z.tanggal);
+                    }
+                });
+
+                rekapDiv.style.display = 'block';
+                if(filtered.length > 0) {
+                    rekapText.innerHTML = '<strong style="font-size:14px;"><i data-lucide="bar-chart-2" style="width:16px;vertical-align:middle;margin-right:5px"></i> Rekap Lembur (Disetujui) : ' + keyword.toUpperCase() + '</strong><br><br>' + 
+                    '&bull; Jumlah Lembur : <b>' + totalDisetujui + ' kali</b><br>' +
+                    '&bull; Total Durasi : <b>' + totalDurasi + ' Menit</b> (' + (totalDurasi/60).toFixed(1) + ' Jam)<br>' +
+                    '&bull; Daftar Tanggal : ' + (tanggalList.length > 0 ? tanggalList.join(', ') : 'Belum ada data disetujui');
+                } else {
+                    rekapText.innerHTML = '<strong>Tidak ada data lembur untuk pencarian tersebut.</strong>';
+                }
+                
+                // Tampilkan data yang sudah disaring ke tabel
+                renderLemburTableData(filtered);
+            }
+
             function updateLembur(id,status){if(confirm('Ubah status menjadi '+status+'?')){google.script.run.withSuccessHandler(function(r){if(r.success){showToast('Status Lembur diperbarui','success');loadData();}}).updateLemburStatus(id,status);}}
         `;
     }
