@@ -19,7 +19,7 @@
     
     <script>
     // === UBAH URL DI BAWAH INI DENGAN URL WEB APP ANDA ===
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxf3C_OKX-RJ0IT1WQCK2EYfm8clUUinW-qUVSv3sxMFniJJrvx0Km0omvROrDUpBhUWg/exec";
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxnkXmKp32qafqTJTXinZIgHnzSkqm38WuYjCx57g9KhbrJLSecf8xFZKcwMBtWJmk/exec";
     
     const google = {
         script: {
@@ -36,25 +36,26 @@
     
     function createRunner(callback, type) {
         let successCb = type === 'withSuccessHandler' ? callback : null;
-        let failureCb = type === 'withFailureHandler' ? callback : (err => console.error(err));
-        
+        let failureCb = type === 'withFailureHandler' ? callback : (err => alert('Gagal terhubung ke server: ' + err));
+
         let runner = new Proxy({}, {
             get: function(target, actionName) {
                 if (actionName === 'withSuccessHandler') return function(cb) { successCb = cb; return runner; };
                 if (actionName === 'withFailureHandler') return function(cb) { failureCb = cb; return runner; };
-                
+
                 return function(...args) {
                     fetch(GAS_API_URL, {
                         method: 'POST',
-                        redirect: 'follow', 
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8' 
-                        },
+                        redirect: 'follow',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ action: actionName, args: args })
                     })
                     .then(res => res.json())
-                    .then(data => { if (successCb) successCb(data); })
-                    .catch(err => { if (failureCb) failureCb(err); });
+                    .then(data => {
+                        if (data && data.serverError) { failureCb(data.message); return; }
+                        if (successCb) successCb(data);
+                    })
+                    .catch(err => failureCb(err));
                 };
             }
         });
@@ -296,7 +297,7 @@
             
             function loadFaceApi(){
                 if(typeof faceapi === 'undefined') return setTimeout(loadFaceApi, 500); // Tunggu sampai diload dinamis
-                Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model'),faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model'),faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model')]).then(function(){console.log('Face API Ready');});
+                Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),faceapi.nets.faceRecognitionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')]).then(function(){console.log('Face API Ready');});
             }
             
             function initApp(){ google.script.run.withSuccessHandler(function(r){if(typeof r==='object'){compName=r.name||'Dua Putra Group'; compLogo=r.logo||'';}else{compName=r;} var e1=document.getElementById('app-title'); if(e1)e1.innerText=compName; var e2=document.getElementById('app-logo-title'); if(e2)e2.innerText=compName; updateEmpLogos(); }).getCompanySettings(); showInput(); loadFaceApi(); setTimeout(function(){ var sn = localStorage.getItem('saved_nik'); if(sn){ var ni = document.getElementById('nik-in'); if(ni) { ni.value = sn; checkEmp(); } } }, 300); }
@@ -588,7 +589,7 @@
             var uploadedImg=null; document.addEventListener('DOMContentLoaded', function(){lucide.createIcons(); loadFaceApi();});
             function loadFaceApi(){
                 if(typeof faceapi === 'undefined') return setTimeout(loadFaceApi, 500);
-                Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model'),faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model'),faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model')]).then(function(){console.log('Face API Ready');});
+                Promise.all([faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),faceapi.nets.faceLandmark68Net.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models'),faceapi.nets.faceRecognitionNet.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')]).then(function(){console.log('Face API Ready');});
             }
             function previewFile(input){if(input.files && input.files[0]){var reader=new FileReader();reader.onload=function(e){var img=document.getElementById('preview-img');img.src=e.target.result;img.style.display='block';document.getElementById('placeholder-icon').style.display='none';uploadedImg=new Image();uploadedImg.src=e.target.result;};reader.readAsDataURL(input.files[0]);}}
             function submitReg(){
@@ -936,7 +937,6 @@
             
             // Script untuk Karyawan Absen
             scriptsToLoad.push(
-                'https://unpkg.com/html5-qrcode@2.3.4/html5-qrcode.min.js',
                 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js'
             );
         }
@@ -944,8 +944,9 @@
         document.getElementById('app-root').innerHTML = bodyHtml;
 
         // Memuat semua file external library secara paralel (asinkron) agar tidak memblokir render
-        if(scriptsToLoad.length > 0) {
-            await Promise.all(scriptsToLoad.map(loadScript));
+        if (scriptsToLoad.length > 0) {
+            const results = await Promise.allSettled(scriptsToLoad.map(loadScript));
+            results.forEach((r, i) => { if (r.status === 'rejected') console.warn('Gagal memuat:', scriptsToLoad[i]); });
         }
         
         // Eksekusi core-logic kita SAAT semua library external sudah siap
